@@ -1,39 +1,38 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/finhub-logo.png';
 
 const NAV = [
     {
         id: 'tracker',
         label: 'Expense Tracker',
-        icon: 'ti-wallet',
+        icon: '💰',
         color: '#534AB7',
-        light: '#EEEDFE',
         sub: [
-            { id: 'dashboard', label: 'Dashboard', icon: 'ti-home', path: '/' },
-            { id: 'addentry', label: 'Add Entry', icon: 'ti-plus', path: '/add' },
-            { id: 'history', label: 'History', icon: 'ti-list', path: '/history' },
-            { id: 'charts', label: 'Charts', icon: 'ti-chart-bar', path: '/charts' },
+            { label: 'Dashboard', icon: '🏠', path: '/' },
+            { label: 'Add Entry', icon: '➕', path: '/add' },
+            { label: 'History', icon: '📋', path: '/history' },
+            { label: 'Charts', icon: '📊', path: '/charts' },
         ],
     },
     {
         id: 'settleup',
         label: 'SettleUp',
-        icon: 'ti-users',
+        icon: '👥',
         color: '#0F6E56',
-        light: '#E1F5EE',
         sub: [
-            { id: 'groups', label: 'My Groups', icon: 'ti-layout-grid', path: '/groups' },
-            { id: 'addexp', label: 'Add Expense', icon: 'ti-plus', path: '/groups/add' },
-            { id: 'balances', label: 'Balances', icon: 'ti-scale', path: '/balances' },
-            { id: 'activity', label: 'Activity', icon: 'ti-activity', path: '/activity' },
+            { label: 'My Groups', icon: '🗂️', path: '/groups' },
+            { label: 'Add Expense', icon: '➕', path: '/groups/add' },
+            { label: 'Balances', icon: '⚖️', path: '/balances' },
+            { label: 'Activity', icon: '📡', path: '/activity' },
         ],
     },
 ];
 
 const BOTTOM = [
-    { id: 'profile', label: 'Profile', icon: 'ti-user', path: '/profile' },
-    { id: 'settings', label: 'Settings', icon: 'ti-settings', path: '/settings' },
+    { label: 'Profile', icon: '👤', path: '/profile' },
+    { label: 'Settings', icon: '⚙️', path: '/settings' },
 ];
 
 export default function Sidebar({ collapsed, setCollapsed }) {
@@ -43,67 +42,66 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     const [open, setOpen] = useState('tracker');
 
     const isActive = (path) => location.pathname === path;
-    const isSectionActive = (section) =>
-        section.sub.some(s => s.path === location.pathname);
-
-    const handleSection = (id) => {
-        setOpen(open === id ? '' : id);
-    };
-
-    const handleNav = (path) => navigate(path);
+    const isSectionOn = (sec) => sec.sub.some(s => s.path === location.pathname);
 
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
 
-            {/* Logo + collapse button */}
+            {/* ── Logo row ── */}
             <div className="sidebar-logo">
-                {!collapsed && <span className="logo-text">FinHub</span>}
-                <button
-                    className="collapse-btn"
-                    onClick={() => setCollapsed(!collapsed)}
-                    aria-label="Toggle sidebar"
-                >
-                    <i className={`ti ${collapsed ? 'ti-menu-2' : 'ti-layout-sidebar-left-collapse'}`}
-                        aria-hidden="true" />
-                </button>
+                {collapsed ? (
+                    <img
+                        src={logo}
+                        alt="FinHub"
+                        className="logo-icon"
+                        onClick={() => setCollapsed(false)}
+                    />
+                ) : (
+                    <>
+                        <img src={logo} alt="FinHub" className="logo-full" />
+                        <button
+                            className="collapse-btn"
+                            onClick={() => setCollapsed(true)}
+                            title="Collapse sidebar"
+                        >
+                            ←
+                        </button>
+                    </>
+                )}
             </div>
 
-            {/* Main nav */}
+            {/* ── Main nav ── */}
             <nav className="sidebar-nav">
                 {NAV.map(section => {
-                    const active = isSectionActive(section);
+                    const secActive = isSectionOn(section);
                     const isOpen = open === section.id;
                     return (
                         <div key={section.id} className="nav-section">
-
-                            {/* Section header */}
                             <button
-                                className={`nav-section-btn ${active ? 'active' : ''}`}
-                                style={active ? { background: section.color } : {}}
-                                onClick={() => handleSection(section.id)}
+                                className={`nav-section-btn ${secActive ? 'active' : ''}`}
+                                style={secActive ? { background: section.color } : {}}
+                                onClick={() => setOpen(isOpen ? '' : section.id)}
                                 title={collapsed ? section.label : ''}
                             >
-                                <i className={`ti ${section.icon}`} aria-hidden="true" />
+                                <span className="nav-icon">{section.icon}</span>
                                 {!collapsed && (
                                     <>
                                         <span className="nav-label">{section.label}</span>
-                                        <i className={`ti ${isOpen ? 'ti-chevron-up' : 'ti-chevron-down'} nav-chevron`}
-                                            aria-hidden="true" />
+                                        <span className="nav-chevron">{isOpen ? '▲' : '▼'}</span>
                                     </>
                                 )}
                             </button>
 
-                            {/* Sub items */}
                             {isOpen && !collapsed && (
                                 <div className="nav-sub">
                                     {section.sub.map(item => (
                                         <button
-                                            key={item.id}
+                                            key={item.path}
                                             className={`nav-sub-btn ${isActive(item.path) ? 'active' : ''}`}
                                             style={isActive(item.path) ? { color: section.color } : {}}
-                                            onClick={() => handleNav(item.path)}
+                                            onClick={() => navigate(item.path)}
                                         >
-                                            <i className={`ti ${item.icon}`} aria-hidden="true" />
+                                            <span>{item.icon}</span>
                                             <span>{item.label}</span>
                                         </button>
                                     ))}
@@ -114,27 +112,25 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 })}
             </nav>
 
-            {/* Bottom items */}
+            {/* ── Bottom ── */}
             <div className="sidebar-bottom">
                 {BOTTOM.map(item => (
                     <button
-                        key={item.id}
+                        key={item.path}
                         className={`bottom-btn ${isActive(item.path) ? 'active' : ''}`}
-                        onClick={() => handleNav(item.path)}
+                        onClick={() => navigate(item.path)}
                         title={collapsed ? item.label : ''}
                     >
-                        <i className={`ti ${item.icon}`} aria-hidden="true" />
+                        <span className="nav-icon">{item.icon}</span>
                         {!collapsed && <span>{item.label}</span>}
                     </button>
                 ))}
-
-                {/* Logout */}
                 <button
                     className="bottom-btn logout-btn"
                     onClick={logout}
                     title={collapsed ? 'Logout' : ''}
                 >
-                    <i className="ti ti-logout" aria-hidden="true" />
+                    <span className="nav-icon">🚪</span>
                     {!collapsed && <span>Logout</span>}
                 </button>
             </div>

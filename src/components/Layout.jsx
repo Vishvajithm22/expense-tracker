@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 
-const PAGE_TITLES = {
+const PAGE_META = {
     '/': { title: 'Dashboard', section: 'Expense Tracker', color: '#534AB7' },
     '/add': { title: 'Add Entry', section: 'Expense Tracker', color: '#534AB7' },
     '/history': { title: 'History', section: 'Expense Tracker', color: '#534AB7' },
@@ -21,7 +21,7 @@ export default function Layout({ children }) {
     const { user } = useAuth();
     const location = useLocation();
 
-    const meta = PAGE_TITLES[location.pathname]
+    const meta = PAGE_META[location.pathname]
         || { title: 'FinHub', section: '', color: '#534AB7' };
 
     const initials = user?.name
@@ -38,24 +38,17 @@ export default function Layout({ children }) {
                 {/* Top bar */}
                 <header className="topbar">
                     <div className="topbar-left">
-                        <div
-                            className="topbar-accent"
-                            style={{ background: meta.color }}
-                        />
+                        <div className="topbar-accent" style={{ background: meta.color }} />
                         <div>
                             <p className="topbar-section">{meta.section}</p>
                             <h1 className="topbar-title">{meta.title}</h1>
                         </div>
                     </div>
                     <div className="topbar-right">
-                        <button className="notif-btn" aria-label="Notifications">
-                            <i className="ti ti-bell" aria-hidden="true" />
-                            <span className="notif-dot" />
-                        </button>
                         <div
                             className="avatar"
                             style={{ background: meta.color + '22', color: meta.color }}
-                            title={user?.name}
+                            title={user?.name || 'User'}
                         >
                             {initials}
                         </div>
