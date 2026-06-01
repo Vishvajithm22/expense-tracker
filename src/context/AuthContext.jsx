@@ -1,9 +1,12 @@
 import { createContext, useState, useContext } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+// ── Base URL — your Express backend ─────────
+const API = 'http://localhost:5000/api';
 
+export function AuthProvider({ children }) {
     const [user, setUser] = useState(
         JSON.parse(localStorage.getItem('user')) || null
     );
@@ -13,7 +16,7 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // ─── helper: save login data to state + localStorage ───────
+    // ── Save login data ──────────────────────
     const saveLogin = (data) => {
         setToken(data.token);
         setUser(data.user);
@@ -21,48 +24,43 @@ export function AuthProvider({ children }) {
         localStorage.setItem('user', JSON.stringify(data.user));
     };
 
-    // ─── REGISTER ──────────────────────────────────────────────
-    // TODO: replace mock with real API when backend is ready:
-    //   const res = await axios.post('http://localhost:5000/api/auth/register', { name, email, password });
-    //   saveLogin(res.data);
+    // ── Register ─────────────────────────────
     const register = async (name, email, password) => {
-        setLoading(true); setError('');
+        setLoading(true);
+        setError('');
         try {
-            // Mock — saves fake data so app works without backend
-            await new Promise(r => setTimeout(r, 600)); // fake loading delay
-            saveLogin({
-                token: 'mock-token-' + Date.now(),
-                user: { id: '1', name, email },
+            const res = await axios.post(`${API}/auth/register`, {
+                name, email, password
             });
+            saveLogin(res.data);
             return true;
         } catch (err) {
-            setError('Registration failed');
+            setError(err.response?.data?.msg || 'Registration failed');
             return false;
-        } finally { setLoading(false); }
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // ─── LOGIN ─────────────────────────────────────────────────
-    // TODO: replace mock with real API when backend is ready:
-    //   const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-    //   saveLogin(res.data);
+    // ── Login ─────────────────────────────────
     const login = async (email, password) => {
-        setLoading(true); setError('');
+        setLoading(true);
+        setError('');
         try {
-            // Mock — any email/password works for now
-            await new Promise(r => setTimeout(r, 600)); // fake loading delay
-            const name = email.split('@')[0]; // use email prefix as name
-            saveLogin({
-                token: 'mock-token-' + Date.now(),
-                user: { id: '1', name, email },
+            const res = await axios.post(`${API}/auth/login`, {
+                email, password
             });
+            saveLogin(res.data);
             return true;
         } catch (err) {
-            setError('Login failed');
+            setError(err.response?.data?.msg || 'Invalid credentials');
             return false;
-        } finally { setLoading(false); }
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // ─── LOGOUT ────────────────────────────────────────────────
+    // ── Logout ────────────────────────────────
     const logout = () => {
         setToken(null);
         setUser(null);
@@ -71,7 +69,7 @@ export function AuthProvider({ children }) {
         window.location.href = '/login';
     };
 
-    // ─── AUTH HEADER for API calls ─────────────────────────────
+    // ── Auth header for all protected API calls
     const authHeader = () => ({
         headers: { Authorization: `Bearer ${token}` }
     });
