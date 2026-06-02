@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/finhub-logo.png';
+import Cubes from '../components/Cubes/Cubes';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -17,13 +18,26 @@ export default function Login() {
 
     return (
         <div className="auth-container">
+            <div className="hero-bg">
+                <Cubes
+                    gridSize={10}
+                    maxAngle={35}
+                    radius={5}
+                    borderStyle="1.5px dashed rgba(181, 155, 220, 0.25)"
+                    faceColor="transparent"
+                    rippleColor="#a78bfa"
+                    rippleSpeed={2}
+                    autoAnimate={true}
+                    rippleOnClick={true}
+                />
+            </div>
+
+            {/* Logo at top-left of page */}
+            <div className="auth-logo-wrap">
+                <img src={logo} alt="FinHub" className="auth-logo" />
+            </div>
+
             <div className="auth-card">
-
-                {/* Logo at top of card */}
-                <div className="auth-logo-wrap">
-                    <img src={logo} alt="FinHub" className="auth-logo" />
-                </div>
-
                 <h2>Welcome back</h2>
                 <p className="subtitle">Sign in to your FinHub account</p>
 
