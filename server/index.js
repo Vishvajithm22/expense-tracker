@@ -4,20 +4,17 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/transactions', require('./routes/transactions'));
+app.use('/api/groups', require('./routes/groups'));  // ← NEW LINE
 
 app.get('/', (req, res) => res.json({ msg: 'FinHub API running ✅' }));
 
 mongoose
-    .connect(process.env.MONGO_URI, {
-        serverSelectionTimeoutMS: 10000,
-        family: 4,   // ← forces IPv4, fixes ECONNREFUSED on some systems
-    })
+    .connect(process.env.MONGO_URI, { family: 4 })
     .then(() => {
         console.log('✅ MongoDB connected');
         app.listen(process.env.PORT || 5000, () =>
