@@ -3,10 +3,11 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-// ── Base URL — your Express backend ─────────
 const API = 'http://localhost:5000/api';
 
 export function AuthProvider({ children }) {
+
+    // ── Read saved session from localStorage ─────────────────
     const [user, setUser] = useState(
         JSON.parse(localStorage.getItem('user')) || null
     );
@@ -16,21 +17,28 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // ── Save login data ──────────────────────
+    // ── Save login — normalise user id field ─────────────────
+    // MongoDB returns _id, but our balance logic uses user.id
+    // We store both so comparisons always work
     const saveLogin = (data) => {
+        const userToSave = {
+            ...data.user,
+            id: data.user.id || data.user._id?.toString(),
+            _id: data.user._id || data.user.id,
+        };
         setToken(data.token);
-        setUser(data.user);
+        setUser(userToSave);
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(userToSave));
     };
 
-    // ── Register ─────────────────────────────
+    // ── Register ──────────────────────────────────────────────
     const register = async (name, email, password) => {
         setLoading(true);
         setError('');
         try {
             const res = await axios.post(`${API}/auth/register`, {
-                name, email, password
+                name, email, password,
             });
             saveLogin(res.data);
             return true;
@@ -42,13 +50,13 @@ export function AuthProvider({ children }) {
         }
     };
 
-    // ── Login ─────────────────────────────────
+    // ── Login ─────────────────────────────────────────────────
     const login = async (email, password) => {
         setLoading(true);
         setError('');
         try {
             const res = await axios.post(`${API}/auth/login`, {
-                email, password
+                email, password,
             });
             saveLogin(res.data);
             return true;
@@ -60,7 +68,7 @@ export function AuthProvider({ children }) {
         }
     };
 
-    // ── Logout ────────────────────────────────
+    // ── Logout ────────────────────────────────────────────────
     const logout = () => {
         setToken(null);
         setUser(null);
@@ -69,19 +77,30 @@ export function AuthProvider({ children }) {
         window.location.href = '/login';
     };
 
-    // ── Auth header for all protected API calls
+    // ── Auth header — attach JWT to every API request ─────────
+    // Usage: axios.get(url, authHeader())
     const authHeader = () => ({
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
 
     return (
         <AuthContext.Provider value={{
-            user, token, loading, error,
-            login, register, logout, authHeader
+            user,
+            token,
+            loading,
+            error,
+            login,
+            register,
+            logout,
+            authHeader,
         }}>
             {children}
         </AuthContext.Provider>
     );
 }
 
+// Custom hook — use this in any component
+// const { user, token, login, logout, authHeader } = useAuth();
 export const useAuth = () => useContext(AuthContext);

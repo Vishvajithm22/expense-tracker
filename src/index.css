@@ -1174,7 +1174,19 @@ body {
   width: 100%;
 }
 
---- BALANCE SUMMARY CARDS --- .bal-summary {
+/* ── FULL WIDTH LAYOUT ── */
+.dashboard-page {
+  max-width: 1100px;
+  width: 100%;
+}
+
+.su-page {
+  max-width: 900px;
+  width: 100%;
+}
+
+/* ── BALANCE SUMMARY CARDS ── */
+.bal-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
@@ -1232,10 +1244,14 @@ body {
   border-radius: 6px;
 }
 
---- DASHBOARD FULL WIDTH --- .summary-cards {
-  grid-template-columns: repeat(3, 1fr);
-}
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .bal-summary {
+    grid-template-columns: 1fr;
+  }
 
-.dash-body {
-  grid-template-columns: 300px 1fr;
+  .dashboard-page,
+  .su-page {
+    max-width: 100%;
+  }
 }
