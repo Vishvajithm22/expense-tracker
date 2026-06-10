@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/finhub-logo.png';
+
+let logo = null;
+try { logo = require('../assets/finhub-logo.png'); } catch (e) { logo = null; }
 
 const NAV = [
     {
@@ -23,7 +25,7 @@ const NAV = [
         color: '#0F6E56',
         sub: [
             { label: 'My Groups', icon: '🗂️', path: '/groups' },
-            { label: 'Add Expense', icon: '➕', path: '/groups/add' },
+            { label: 'Add Expense', icon: '➕', path: '/groups' },
             { label: 'Balances', icon: '⚖️', path: '/balances' },
             { label: 'Activity', icon: '📡', path: '/activity' },
         ],
@@ -47,30 +49,26 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
 
-            {/* ── Logo row ── */}
+            {/* Logo row */}
             <div className="sidebar-logo">
-                {collapsed ? (
-                    <img
-                        src={logo}
-                        alt="FinHub"
-                        className="logo-icon"
-                        onClick={() => setCollapsed(false)}
-                    />
-                ) : (
-                    <>
-                        <img src={logo} alt="FinHub" className="logo-full" />
-                        <button
-                            className="collapse-btn"
-                            onClick={() => setCollapsed(true)}
-                            title="Collapse sidebar"
-                        >
-                            ←
-                        </button>
-                    </>
+                {!collapsed && (
+                    <div className="logo-area">
+                        {logo
+                            ? <img src={logo} alt="FinHub" className="logo-full" />
+                            : <span className="logo-text">FinHub</span>
+                        }
+                    </div>
                 )}
+                <button
+                    className="collapse-btn"
+                    onClick={() => setCollapsed(!collapsed)}
+                    title={collapsed ? 'Expand' : 'Collapse'}
+                >
+                    {collapsed ? '→' : '←'}
+                </button>
             </div>
 
-            {/* ── Main nav ── */}
+            {/* Main nav */}
             <nav className="sidebar-nav">
                 {NAV.map(section => {
                     const secActive = isSectionOn(section);
@@ -94,9 +92,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
                             {isOpen && !collapsed && (
                                 <div className="nav-sub">
-                                    {section.sub.map(item => (
+                                    {section.sub.map((item, idx) => (
                                         <button
-                                            key={item.path}
+                                            key={idx}
                                             className={`nav-sub-btn ${isActive(item.path) ? 'active' : ''}`}
                                             style={isActive(item.path) ? { color: section.color } : {}}
                                             onClick={() => navigate(item.path)}
@@ -112,7 +110,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 })}
             </nav>
 
-            {/* ── Bottom ── */}
+            {/* Bottom */}
             <div className="sidebar-bottom">
                 {BOTTOM.map(item => (
                     <button

@@ -1255,3 +1255,153 @@ body {
     max-width: 100%;
   }
 }
+
+/* ── TRACKER PAGES ── */
+.tracker-page {
+  max-width: 900px;
+  width: 100%;
+}
+
+.tracker-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.tracker-page-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 5px;
+}
+
+.add-entry-card {
+  max-width: 480px;
+}
+
+.history-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.history-search {
+  padding: 9px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  flex: 1;
+  min-width: 200px;
+}
+
+.history-search:focus {
+  border-color: #534AB7;
+}
+
+/* ── ACTIVITY ── */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.activity-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.activity-msg {
+  font-size: 13px;
+  color: #1f2937;
+  margin-bottom: 3px;
+  line-height: 1.5;
+}
+
+.activity-meta {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── PROFILE ── */
+.profile-card {
+  background: white;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #EEEDFE;
+  color: #534AB7;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.profile-email {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.profile-row-label {
+  font-size: 13px;
+  color: #374151;
+}
+
+.profile-row-value {
+  font-size: 13px;
+  color: #9ca3af;
+}
