@@ -304,10 +304,11 @@ body {
 /* ═══════════════════════════════════════════
    PAGE CONTENT
 ═══════════════════════════════════════════ */
+/* ── PAGE CONTENT — fills entire main area ── */
 .page-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 28px 32px;
 }
 
 /* ═══════════════════════════════════════════
@@ -471,15 +472,18 @@ body {
 /* ═══════════════════════════════════════════
    DASHBOARD PAGE
 ═══════════════════════════════════════════ */
+/* ── DASHBOARD PAGE — full width ── */
 .dashboard-page {
-  max-width: 940px;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Summary cards */
+/* ── SUMMARY CARDS — always 3 columns ── */
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 1.5rem;
 }
 
@@ -516,12 +520,14 @@ body {
 }
 
 /* Chart */
+/* ── CHART wrapper — full width ── */
 .chart-wrapper {
   background: white;
   border-radius: 14px;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.25rem;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  width: 100%;
 }
 
 .chart-wrapper h3 {
@@ -569,10 +575,12 @@ body {
 }
 
 /* Dashboard body — form + list side by side */
+/* ── DASHBOARD BODY — responsive 2 column ── */
 .dash-body {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 360px 1fr;
+  gap: 1.5rem;
+  align-items: start;
 }
 
 /* Transaction form */
@@ -755,7 +763,17 @@ body {
 
 /* ═══════════════════════════════════════════
    RESPONSIVE
-═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════ */
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .dash-body {
+    grid-template-columns: 320px 1fr;
+  }
+  .page-content {
+    padding: 20px 24px;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 64px;
@@ -795,8 +813,10 @@ body {
   }
 }
 
+/* ── SETTLEUP pages ── */
 .su-page {
-  max-width: 700px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .su-header {
@@ -1158,32 +1178,7 @@ body {
   color: #9ca3af;
 }
 
-.dashboard-page,
-.su-page {
-  max-width: 100%;
-  width: 100%;
-}
 
---- OR if you want a max width with better centering --- .dashboard-page {
-  max-width: 1100px;
-  width: 100%;
-}
-
-.su-page {
-  max-width: 900px;
-  width: 100%;
-}
-
-/* ── FULL WIDTH LAYOUT ── */
-.dashboard-page {
-  max-width: 1100px;
-  width: 100%;
-}
-
-.su-page {
-  max-width: 900px;
-  width: 100%;
-}
 
 /* ── BALANCE SUMMARY CARDS ── */
 .bal-summary {
@@ -1249,17 +1244,13 @@ body {
   .bal-summary {
     grid-template-columns: 1fr;
   }
-
-  .dashboard-page,
-  .su-page {
-    max-width: 100%;
-  }
 }
 
 /* ── TRACKER PAGES ── */
+/* ── TRACKER pages ── */
 .tracker-page {
-  max-width: 900px;
   width: 100%;
+  max-width: 100%;
 }
 
 .tracker-page-header {
@@ -1280,8 +1271,10 @@ body {
   margin-bottom: 5px;
 }
 
+/* ── ADD ENTRY card — wider on big screens ── */
 .add-entry-card {
-  max-width: 480px;
+  max-width: 560px;
+  width: 100%;
 }
 
 .history-controls {

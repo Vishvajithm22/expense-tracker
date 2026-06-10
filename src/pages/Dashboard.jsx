@@ -15,53 +15,38 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // ── Fetch transactions on page load ──────
     useEffect(() => {
-        const fetchTransactions = async () => {
+        const fetch = async () => {
             try {
-                const res = await axios.get(
-                    `${API}/transactions`,
-                    authHeader()
-                );
+                const res = await axios.get(`${API}/transactions`, authHeader());
                 setTransactions(res.data);
             } catch (err) {
                 setError('Failed to load transactions');
-                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchTransactions();
+        fetch();
     }, []);
 
-    // ── Add transaction ───────────────────────
     const addTransaction = async (tx) => {
         try {
-            const res = await axios.post(
-                `${API}/transactions`,
-                tx,
-                authHeader()
-            );
+            const res = await axios.post(`${API}/transactions`, tx, authHeader());
             setTransactions(prev => [res.data, ...prev]);
         } catch (err) {
-            console.error('Add failed:', err.response?.data?.msg);
+            console.error(err);
         }
     };
 
-    // ── Delete transaction ────────────────────
     const deleteTransaction = async (id) => {
         try {
-            await axios.delete(
-                `${API}/transactions/${id}`,
-                authHeader()
-            );
+            await axios.delete(`${API}/transactions/${id}`, authHeader());
             setTransactions(prev => prev.filter(t => t._id !== id));
         } catch (err) {
-            console.error('Delete failed:', err.response?.data?.msg);
+            console.error(err);
         }
     };
 
-    // ── Export CSV ───────────────────────────
     const exportCSV = () => {
         const rows = [
             ['Title', 'Amount', 'Type', 'Category', 'Date'],
@@ -84,7 +69,7 @@ export default function Dashboard() {
 
     if (loading) return (
         <div className="dashboard-page">
-            <p className="empty">Loading your transactions...</p>
+            <p className="empty">Loading your data...</p>
         </div>
     );
 
@@ -93,19 +78,26 @@ export default function Dashboard() {
 
             {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>}
 
+            {/* ── Balance cards ── */}
             <BalanceSummary transactions={transactions} />
 
+            {/* ── Chart — full width ── */}
             <ExpenseChart transactions={transactions} />
 
+            {/* ── Export ── */}
             <div className="dash-actions">
                 <button className="btn-export" onClick={exportCSV}>
                     ⬇ Export CSV
                 </button>
             </div>
 
+            {/* ── Form + List side by side ── */}
             <div className="dash-body">
+
+                {/* Left — add form */}
                 <TransactionForm onAdd={addTransaction} />
 
+                {/* Right — transaction list fills remaining space */}
                 <div className="list-section">
                     <div className="filter-bar">
                         {['all', 'income', 'expense'].map(f => (
@@ -123,8 +115,8 @@ export default function Dashboard() {
                         onDelete={deleteTransaction}
                     />
                 </div>
-            </div>
 
+            </div>
         </div>
     );
 }
