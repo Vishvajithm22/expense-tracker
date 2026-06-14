@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 
@@ -18,8 +18,10 @@ const PAGE_META = {
 
 export default function Layout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
-    const { user } = useAuth();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const { user, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
 
     const meta = PAGE_META[location.pathname]
         || { title: 'FinHub', section: '', color: '#534AB7' };
@@ -44,13 +46,53 @@ export default function Layout({ children }) {
                             <h1 className="topbar-title">{meta.title}</h1>
                         </div>
                     </div>
+
                     <div className="topbar-right">
-                        <div
-                            className="avatar"
-                            style={{ background: meta.color + '22', color: meta.color }}
-                            title={user?.name || 'User'}
-                        >
-                            {initials}
+                        {/* Avatar with dropdown */}
+                        <div className="avatar-wrapper">
+                            <div
+                                className="avatar"
+                                style={{ background: meta.color + '22', color: meta.color }}
+                                title={user?.name}
+                                onClick={() => setMenuOpen(prev => !prev)}
+                            >
+                                {initials}
+                            </div>
+
+                            {menuOpen && (
+                                <>
+                                    {/* Click outside to close */}
+                                    <div
+                                        className="avatar-backdrop"
+                                        onClick={() => setMenuOpen(false)}
+                                    />
+                                    {/* Dropdown menu */}
+                                    <div className="avatar-menu">
+                                        <div className="avatar-menu-header">
+                                            <p className="avatar-menu-name">{user?.name}</p>
+                                            <p className="avatar-menu-email">{user?.email}</p>
+                                        </div>
+                                        <button
+                                            className="avatar-menu-item"
+                                            onClick={() => { navigate('/profile'); setMenuOpen(false); }}
+                                        >
+                                            👤 Profile
+                                        </button>
+                                        <button
+                                            className="avatar-menu-item"
+                                            onClick={() => { navigate('/settings'); setMenuOpen(false); }}
+                                        >
+                                            ⚙️ Settings
+                                        </button>
+                                        <button
+                                            className="avatar-menu-item avatar-menu-logout"
+                                            onClick={() => { logout(); setMenuOpen(false); }}
+                                        >
+                                            🚪 Logout
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>

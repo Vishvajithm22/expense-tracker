@@ -1486,3 +1486,136 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── AVATAR DROPDOWN ── */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.avatar:hover {
+  opacity: 0.85;
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.avatar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.avatar-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 200px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.avatar-menu-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+.avatar-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.avatar-menu-email {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.avatar-menu-item {
+  width: 100%;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f9fafb;
+  transition: background 0.12s;
+}
+
+.avatar-menu-item:hover {
+  background: #f9fafb;
+}
+
+.avatar-menu-item:last-child {
+  border-bottom: none;
+}
+
+.avatar-menu-logout {
+  color: #c0392b !important;
+}
+
+.avatar-menu-logout:hover {
+  background: #fff5f5 !important;
+}
+
+/* ── SETTINGS LAYOUT ── */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+.settings-info-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1f2937;
+}
+
+.settings-info-card p {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
