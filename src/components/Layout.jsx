@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import Sidebar from './Sidebar';
 
 const PAGE_META = {
@@ -20,6 +21,7 @@ export default function Layout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const { user, logout } = useAuth();
+    const { dark, toggleTheme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -32,12 +34,9 @@ export default function Layout({ children }) {
 
     return (
         <div className="app-layout">
-
             <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
             <div className="main-area">
-
-                {/* Top bar */}
                 <header className="topbar">
                     <div className="topbar-left">
                         <div className="topbar-accent" style={{ background: meta.color }} />
@@ -48,7 +47,6 @@ export default function Layout({ children }) {
                     </div>
 
                     <div className="topbar-right">
-                        {/* Avatar with dropdown */}
                         <div className="avatar-wrapper">
                             <div
                                 className="avatar"
@@ -61,35 +59,40 @@ export default function Layout({ children }) {
 
                             {menuOpen && (
                                 <>
-                                    {/* Click outside to close */}
-                                    <div
-                                        className="avatar-backdrop"
-                                        onClick={() => setMenuOpen(false)}
-                                    />
-                                    {/* Dropdown menu */}
+                                    <div className="avatar-backdrop" onClick={() => setMenuOpen(false)} />
                                     <div className="avatar-menu">
+
                                         <div className="avatar-menu-header">
                                             <p className="avatar-menu-name">{user?.name}</p>
                                             <p className="avatar-menu-email">{user?.email}</p>
                                         </div>
-                                        <button
-                                            className="avatar-menu-item"
-                                            onClick={() => { navigate('/profile'); setMenuOpen(false); }}
-                                        >
-                                            👤 Profile
+
+                                        <button className="avatar-menu-item"
+                                            onClick={() => { navigate('/profile'); setMenuOpen(false); }}>
+                                            👤&nbsp; Profile
                                         </button>
-                                        <button
-                                            className="avatar-menu-item"
-                                            onClick={() => { navigate('/settings'); setMenuOpen(false); }}
-                                        >
-                                            ⚙️ Settings
+
+                                        <button className="avatar-menu-item"
+                                            onClick={() => { navigate('/settings'); setMenuOpen(false); }}>
+                                            ⚙️&nbsp; Settings
                                         </button>
+
+                                        {/* Dark mode toggle */}
                                         <button
-                                            className="avatar-menu-item avatar-menu-logout"
-                                            onClick={() => { logout(); setMenuOpen(false); }}
+                                            className="avatar-menu-item avatar-menu-theme"
+                                            onClick={() => { toggleTheme(); setMenuOpen(false); }}
                                         >
-                                            🚪 Logout
+                                            <span>{dark ? '☀️' : '🌙'}&nbsp; {dark ? 'Light Mode' : 'Dark Mode'}</span>
+                                            <span className={`theme-pill ${dark ? 'on' : ''}`}>
+                                                {dark ? 'ON' : 'OFF'}
+                                            </span>
                                         </button>
+
+                                        <button className="avatar-menu-item avatar-menu-logout"
+                                            onClick={() => { logout(); setMenuOpen(false); }}>
+                                            🚪&nbsp; Logout
+                                        </button>
+
                                     </div>
                                 </>
                             )}
@@ -97,11 +100,9 @@ export default function Layout({ children }) {
                     </div>
                 </header>
 
-                {/* Page content */}
                 <main className="page-content">
                     {children}
                 </main>
-
             </div>
         </div>
     );
