@@ -26,15 +26,15 @@ const Cubes = ({
     typeof cellGap === 'number'
       ? `${cellGap}px`
       : cellGap?.col !== undefined
-      ? `${cellGap.col}px`
-      : '5%';
+        ? `${cellGap.col}px`
+        : '5%';
 
   const rowGap =
     typeof cellGap === 'number'
       ? `${cellGap}px`
       : cellGap?.row !== undefined
-      ? `${cellGap.row}px`
-      : '5%';
+        ? `${cellGap.row}px`
+        : '5%';
 
   const enterDur = duration.enter;
   const leaveDur = duration.leave;
@@ -191,9 +191,9 @@ const Cubes = ({
         : shadow || 'none',
     ...(cubeSize
       ? {
-          width: `${gridSize * cubeSize}px`,
-          height: `${gridSize * cubeSize}px`
-        }
+        width: `${gridSize * cubeSize}px`,
+        height: `${gridSize * cubeSize}px`
+      }
       : {})
   };
 

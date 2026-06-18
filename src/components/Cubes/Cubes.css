@@ -49,7 +49,7 @@
 
 .cube:hover .cube-inner {
   /* No scale down, matching the uploaded wireframe image */
-  transform: none; 
+  transform: none;
 }
 
 .default-animation .cube-face {
@@ -67,8 +67,10 @@
 }
 
 .cube:hover .cube-face {
-  background: transparent !important; /* Keep it transparent wireframe */
-  border-color: #d8b4fe !important; /* Glowing bright lavender border */
+  background: transparent !important;
+  /* Keep it transparent wireframe */
+  border-color: #d8b4fe !important;
+  /* Glowing bright lavender border */
   box-shadow: 0 0 10px rgba(181, 155, 220, 0.4);
 }
 
