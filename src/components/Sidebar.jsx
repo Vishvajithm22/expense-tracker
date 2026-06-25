@@ -12,7 +12,7 @@ const NAV = [
         icon: '💰',
         color: '#534AB7',
         sub: [
-            { label: 'Dashboard', icon: '🏠', path: '/' },
+            { label: 'Dashboard', icon: '🏠', path: '/dashboard' },
             { label: 'Add Entry', icon: '➕', path: '/add' },
             { label: 'History', icon: '📋', path: '/history' },
             { label: 'Charts', icon: '📊', path: '/charts' },
@@ -25,7 +25,7 @@ const NAV = [
         color: '#0F6E56',
         sub: [
             { label: 'My Groups', icon: '🗂️', path: '/groups' },
-            { label: 'Add Expense', icon: '➕', path: '/groups' },
+            { label: 'Add Expense', icon: '➕', path: '/groups/add-expense' }, // ← fixed: unique path
             { label: 'Balances', icon: '⚖️', path: '/balances' },
             { label: 'Activity', icon: '📡', path: '/activity' },
         ],
