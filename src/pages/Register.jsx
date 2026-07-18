@@ -14,7 +14,7 @@ export default function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const ok = await register(name, email, password);
-        if (ok) navigate('/');          // ← goes to Dashboard on success
+        if (ok) navigate('/dashboard');
     };
 
     return (
