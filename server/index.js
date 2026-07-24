@@ -7,12 +7,19 @@ const app = express();
 
 app.use(
     cors({
-        origin: [
-            "http://localhost:3000",
-            "https://expense-tracker-five-iota-91.vercel.app",
-            "https://expense-tracker-f2953k8aa-project-89d8.vercel.app",
-        ],
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        origin: function (origin, callback) {
+            // Allow requests without an Origin (e.g. Postman, curl)
+            if (!origin) return callback(null, true);
+
+            if (
+                origin === "http://localhost:3000" ||
+                origin.endsWith(".vercel.app")
+            ) {
+                return callback(null, true);
+            }
+
+            callback(new Error("Not allowed by CORS"));
+        },
         credentials: true,
     })
 );
