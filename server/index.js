@@ -4,7 +4,30 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+const cors = require("cors");
+
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://expense-tracker-five-iota-91.vercel.app",
+    "https://expense-tracker-6taephf3h-project-89d8.vercel.app"
+];
+
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            return callback(new Error("Not allowed by CORS"));
+        },
+        credentials: true,
+    })
+);
+
+app.use(express.json());
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
