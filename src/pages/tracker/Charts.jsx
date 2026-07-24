@@ -6,7 +6,7 @@ import {
     Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend
 } from 'recharts';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API;
 const COLORS = ['#534AB7', '#0F6E56', '#854F0B', '#185FA5', '#993C1D', '#3B6D11', '#A32D2D'];
 
 export default function Charts() {

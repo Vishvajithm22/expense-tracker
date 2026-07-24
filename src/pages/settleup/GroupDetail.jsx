@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API;
 
 export default function GroupDetail() {
     const { id } = useParams();

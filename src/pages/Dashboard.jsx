@@ -6,7 +6,7 @@ import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import ExpenseChart from '../components/ExpenseChart';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API;
 
 export default function Dashboard() {
     const { authHeader } = useAuth();

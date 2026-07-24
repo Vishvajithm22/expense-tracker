@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API;
 
 export default function Balances() {
     const { authHeader, user } = useAuth();
