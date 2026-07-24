@@ -5,8 +5,6 @@ require('dotenv').config();
 
 const app = express();
 
-const cors = require("cors");
-
 app.use(
     cors({
         origin: function (origin, callback) {
@@ -19,17 +17,17 @@ app.use(
                 return callback(null, true);
             }
 
-            callback(new Error("Not allowed by CORS"));
+            return callback(new Error("Not allowed by CORS"));
         },
         credentials: true,
     })
 );
-app.use(express.json());
+
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/transactions', require('./routes/transactions'));
-app.use('/api/groups', require('./routes/groups'));  // ← NEW LINE
+app.use('/api/groups', require('./routes/groups'));
 
 app.get('/', (req, res) => res.json({ msg: 'FinHub API running ✅' }));
 
