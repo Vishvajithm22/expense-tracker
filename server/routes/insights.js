@@ -2,6 +2,36 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
 
+function escapeRegex(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getMonthRange(offset = 0) {
+    const now = new Date();
+
+    const start = new Date(
+        now.getFullYear(),
+        now.getMonth() + offset,
+        1
+    );
+
+    const end = new Date(
+        now.getFullYear(),
+        now.getMonth() + offset + 1,
+        1
+    );
+
+    return { start, end };
+}
+
+function getCategory(question) {
+    const match = question.match(
+        /(?:on|for)\s+(.+?)(?:\s+this month|\s+last month|\?|$)/i
+    );
+
+    return match ? match[1].trim() : null;
+}
+
 // POST /api/insights/ask
 router.post('/ask', auth, async (req, res) => {
     const { question } = req.body;
@@ -13,88 +43,330 @@ router.post('/ask', auth, async (req, res) => {
     }
 
     try {
-        const normalizedQuestion = question.toLowerCase().trim();
+        const normalized = question.toLowerCase().trim();
 
-        // Step 1: We only support "last month" questions for now.
-        if (!normalizedQuestion.includes('last month')) {
-            return res.status(400).json({
-                msg: 'For now, please ask about spending last month.',
-            });
-        }
-
-        // Step 2: Try to find the category.
-        // Example:
+        // --------------------------------------------------
+        // 1. SPENDING LAST MONTH
+        // Examples:
+        // "How much did I spend last month?"
         // "How much did I spend on food last month?"
-        const categoryMatch = normalizedQuestion.match(
-            /(?:on|for)\s+(.+?)\s+last month/
-        );
+        // --------------------------------------------------
 
-        const category = categoryMatch
-            ? categoryMatch[1].trim()
-            : null;
+        if (
+            normalized.includes('spend') &&
+            normalized.includes('last month')
+        ) {
+            const category = getCategory(normalized);
+            const { start, end } = getMonthRange(-1);
 
-        if (!category) {
-            return res.status(400).json({
-                msg: 'Please include a spending category.',
+            const match = {
+                user: req.user,
+                type: 'expense',
+                date: {
+                    $gte: start,
+                    $lt: end,
+                },
+            };
+
+            if (category) {
+                match.category = {
+                    $regex: new RegExp(
+                        `^${escapeRegex(category)}$`,
+                        'i'
+                    ),
+                };
+            }
+
+            const result = await Transaction.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: '$amount' },
+                        transactionCount: { $sum: 1 },
+                    },
+                },
+            ]);
+
+            return res.json({
+                intent: category
+                    ? 'category_total'
+                    : 'period_total',
+
+                question,
+
+                data: {
+                    category,
+                    period: 'last month',
+                    total: result[0]?.total || 0,
+                    transactionCount:
+                        result[0]?.transactionCount || 0,
+                },
             });
         }
 
-        // Step 3: Calculate the start and end of last month.
-        const now = new Date();
+        // --------------------------------------------------
+        // 2. SPENDING THIS MONTH
+        // Examples:
+        // "How much did I spend this month?"
+        // "How much did I spend on food this month?"
+        // --------------------------------------------------
 
-        const startOfLastMonth = new Date(
-            now.getFullYear(),
-            now.getMonth() - 1,
-            1
-        );
+        if (
+            normalized.includes('spend') &&
+            normalized.includes('this month')
+        ) {
+            const category = getCategory(normalized);
+            const { start, end } = getMonthRange(0);
 
-        const startOfThisMonth = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            1
-        );
+            const match = {
+                user: req.user,
+                type: 'expense',
+                date: {
+                    $gte: start,
+                    $lt: end,
+                },
+            };
 
-        // Step 4: Ask MongoDB to calculate the total.
-        const result = await Transaction.aggregate([
-            {
-                $match: {
-                    user: req.user,
-                    type: 'expense',
-                    category: {
-                        $regex: new RegExp(`^${category}$`, 'i'),
-                    },
-                    date: {
-                        $gte: startOfLastMonth,
-                        $lt: startOfThisMonth,
+            if (category) {
+                match.category = {
+                    $regex: new RegExp(
+                        `^${escapeRegex(category)}$`,
+                        'i'
+                    ),
+                };
+            }
+
+            const result = await Transaction.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: '$amount' },
+                        transactionCount: { $sum: 1 },
                     },
                 },
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$amount' },
-                    count: { $sum: 1 },
+            ]);
+
+            return res.json({
+                intent: category
+                    ? 'category_total'
+                    : 'period_total',
+
+                question,
+
+                data: {
+                    category,
+                    period: 'this month',
+                    total: result[0]?.total || 0,
+                    transactionCount:
+                        result[0]?.transactionCount || 0,
                 },
-            },
-        ]);
+            });
+        }
 
-        const total = result[0]?.total || 0;
-        const count = result[0]?.count || 0;
+        // --------------------------------------------------
+        // 3. COMPARE THIS MONTH VS LAST MONTH
+        // Example:
+        // "Compare my spending this month vs last month."
+        // --------------------------------------------------
 
-        // Step 5: Return the verified database result.
-        res.json({
-            question,
-            data: {
-                category,
-                period: 'last month',
-                total,
-                transactionCount: count,
-            },
+        if (
+            normalized.includes('compare') &&
+            normalized.includes('spending')
+        ) {
+            const thisMonth = getMonthRange(0);
+            const lastMonth = getMonthRange(-1);
+
+            const result = await Transaction.aggregate([
+                {
+                    $match: {
+                        user: req.user,
+                        type: 'expense',
+                        date: {
+                            $gte: lastMonth.start,
+                            $lt: thisMonth.end,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: {
+                            $cond: [
+                                {
+                                    $gte: [
+                                        '$date',
+                                        thisMonth.start,
+                                    ],
+                                },
+                                'thisMonth',
+                                'lastMonth',
+                            ],
+                        },
+                        total: {
+                            $sum: '$amount',
+                        },
+                    },
+                },
+            ]);
+
+            const totals = {
+                thisMonth: 0,
+                lastMonth: 0,
+            };
+
+            result.forEach((item) => {
+                totals[item._id] = item.total;
+            });
+
+            const difference =
+                totals.thisMonth - totals.lastMonth;
+
+            const percentageChange =
+                totals.lastMonth === 0
+                    ? null
+                    : Number(
+                        (
+                            (difference /
+                                totals.lastMonth) *
+                            100
+                        ).toFixed(2)
+                    );
+
+            return res.json({
+                intent: 'period_comparison',
+                question,
+
+                data: {
+                    thisMonth: totals.thisMonth,
+                    lastMonth: totals.lastMonth,
+                    difference,
+                    percentageChange,
+                },
+            });
+        }
+
+        // --------------------------------------------------
+        // 4. TOP SPENDING CATEGORY
+        // Example:
+        // "What category did I spend the most on?"
+        // --------------------------------------------------
+
+        if (
+            normalized.includes('category') &&
+            normalized.includes('most')
+        ) {
+            const { start, end } = getMonthRange(0);
+
+            const result = await Transaction.aggregate([
+                {
+                    $match: {
+                        user: req.user,
+                        type: 'expense',
+                        date: {
+                            $gte: start,
+                            $lt: end,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: '$category',
+                        total: {
+                            $sum: '$amount',
+                        },
+                    },
+                },
+                {
+                    $sort: {
+                        total: -1,
+                    },
+                },
+                {
+                    $limit: 1,
+                },
+            ]);
+
+            return res.json({
+                intent: 'top_category',
+                question,
+
+                data: {
+                    category: result[0]?._id || null,
+                    total: result[0]?.total || 0,
+                    period: 'this month',
+                },
+            });
+        }
+
+        // --------------------------------------------------
+        // 5. INCOME THIS MONTH
+        // Example:
+        // "How much did I earn this month?"
+        // --------------------------------------------------
+
+        if (
+            normalized.includes('earn') &&
+            normalized.includes('this month')
+        ) {
+            const { start, end } = getMonthRange(0);
+
+            const result = await Transaction.aggregate([
+                {
+                    $match: {
+                        user: req.user,
+                        type: 'income',
+                        date: {
+                            $gte: start,
+                            $lt: end,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: {
+                            $sum: '$amount',
+                        },
+                        transactionCount: {
+                            $sum: 1,
+                        },
+                    },
+                },
+            ]);
+
+            return res.json({
+                intent: 'income_total',
+                question,
+
+                data: {
+                    period: 'this month',
+                    total: result[0]?.total || 0,
+                    transactionCount:
+                        result[0]?.transactionCount || 0,
+                },
+            });
+        }
+
+        // --------------------------------------------------
+        // UNSUPPORTED QUESTION
+        // --------------------------------------------------
+
+        return res.status(400).json({
+            msg: 'I could not understand that question yet.',
+
+            supportedQuestions: [
+                'How much did I spend this month?',
+                'How much did I spend on food last month?',
+                'Compare my spending this month vs last month.',
+                'What category did I spend the most on?',
+                'How much did I earn this month?',
+            ],
         });
     } catch (err) {
-        console.error('Insights error:', err.message);
+        console.error('Insights error:', err);
 
-        res.status(500).json({
+        return res.status(500).json({
             msg: 'Server error',
         });
     }
