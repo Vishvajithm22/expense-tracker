@@ -29,6 +29,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/transactions", require("./routes/transactions"));
 app.use("/api/groups", require("./routes/groups"));
+app.use("/api/insights", require("./routes/insights"));
 
 app.get("/", (req, res) => {
     res.json({ msg: "FinHub API running ✅" });
