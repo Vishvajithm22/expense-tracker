@@ -5,10 +5,12 @@ const {
     generateInsightAnswer,
 } = require('../services/groq');
 
+// Escape special characters before using a value inside RegExp
 function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Get the start and end dates for a month
 function getMonthRange(offset = 0) {
     const now = new Date();
 
@@ -27,6 +29,8 @@ function getMonthRange(offset = 0) {
     return { start, end };
 }
 
+// Extract category from questions such as:
+// "How much did I spend on food last month?"
 function getCategory(question) {
     const match = question.match(
         /(?:on|for)\s+(.+?)(?:\s+this month|\s+last month|\?|$)/i
@@ -35,6 +39,8 @@ function getCategory(question) {
     return match ? match[1].trim() : null;
 }
 
+// Ask Groq to phrase the already-calculated result.
+// If Groq fails, return a fallback state instead of breaking the API.
 async function addAIAnswer(question, data) {
     try {
         const answer = await generateInsightAnswer(
@@ -42,14 +48,20 @@ async function addAIAnswer(question, data) {
             data
         );
 
-        return answer;
+        return {
+            answer,
+            aiGenerated: true,
+        };
     } catch (error) {
         console.error(
             'Groq error:',
             error.message
         );
 
-        return null;
+        return {
+            answer: null,
+            aiGenerated: false,
+        };
     }
 }
 
@@ -66,9 +78,13 @@ router.post('/ask', auth, async (req, res) => {
     try {
         const normalized = question.toLowerCase().trim();
 
-        // --------------------------------------------------
+        // ==================================================
         // 1. SPENDING LAST MONTH
-        // --------------------------------------------------
+        //
+        // Examples:
+        // "How much did I spend last month?"
+        // "How much did I spend on food last month?"
+        // ==================================================
 
         if (
             normalized.includes('spend') &&
@@ -96,12 +112,18 @@ router.post('/ask', auth, async (req, res) => {
             }
 
             const result = await Transaction.aggregate([
-                { $match: match },
+                {
+                    $match: match,
+                },
                 {
                     $group: {
                         _id: null,
-                        total: { $sum: '$amount' },
-                        transactionCount: { $sum: 1 },
+                        total: {
+                            $sum: '$amount',
+                        },
+                        transactionCount: {
+                            $sum: 1,
+                        },
                     },
                 },
             ]);
@@ -114,7 +136,7 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
-            const answer = await addAIAnswer(
+            const aiResult = await addAIAnswer(
                 question,
                 data
             );
@@ -123,15 +145,25 @@ router.post('/ask', auth, async (req, res) => {
                 intent: category
                     ? 'category_total'
                     : 'period_total',
+
                 question,
+
                 data,
-                answer,
+
+                answer: aiResult.answer,
+
+                aiGenerated:
+                    aiResult.aiGenerated,
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // 2. SPENDING THIS MONTH
-        // --------------------------------------------------
+        //
+        // Examples:
+        // "How much did I spend this month?"
+        // "How much did I spend on food this month?"
+        // ==================================================
 
         if (
             normalized.includes('spend') &&
@@ -159,12 +191,18 @@ router.post('/ask', auth, async (req, res) => {
             }
 
             const result = await Transaction.aggregate([
-                { $match: match },
+                {
+                    $match: match,
+                },
                 {
                     $group: {
                         _id: null,
-                        total: { $sum: '$amount' },
-                        transactionCount: { $sum: 1 },
+                        total: {
+                            $sum: '$amount',
+                        },
+                        transactionCount: {
+                            $sum: 1,
+                        },
                     },
                 },
             ]);
@@ -177,7 +215,7 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
-            const answer = await addAIAnswer(
+            const aiResult = await addAIAnswer(
                 question,
                 data
             );
@@ -186,15 +224,24 @@ router.post('/ask', auth, async (req, res) => {
                 intent: category
                     ? 'category_total'
                     : 'period_total',
+
                 question,
+
                 data,
-                answer,
+
+                answer: aiResult.answer,
+
+                aiGenerated:
+                    aiResult.aiGenerated,
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // 3. COMPARE THIS MONTH VS LAST MONTH
-        // --------------------------------------------------
+        //
+        // Example:
+        // "Compare my spending this month vs last month."
+        // ==================================================
 
         if (
             normalized.includes('compare') &&
@@ -244,6 +291,7 @@ router.post('/ask', auth, async (req, res) => {
                 totals[item._id] = item.total;
             });
 
+            // The backend performs the calculation.
             const difference =
                 totals.thisMonth -
                 totals.lastMonth;
@@ -266,22 +314,31 @@ router.post('/ask', auth, async (req, res) => {
                 percentageChange,
             };
 
-            const answer = await addAIAnswer(
+            const aiResult = await addAIAnswer(
                 question,
                 data
             );
 
             return res.json({
                 intent: 'period_comparison',
+
                 question,
+
                 data,
-                answer,
+
+                answer: aiResult.answer,
+
+                aiGenerated:
+                    aiResult.aiGenerated,
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // 4. TOP SPENDING CATEGORY
-        // --------------------------------------------------
+        //
+        // Example:
+        // "What category did I spend the most on?"
+        // ==================================================
 
         if (
             normalized.includes('category') &&
@@ -324,22 +381,31 @@ router.post('/ask', auth, async (req, res) => {
                 period: 'this month',
             };
 
-            const answer = await addAIAnswer(
+            const aiResult = await addAIAnswer(
                 question,
                 data
             );
 
             return res.json({
                 intent: 'top_category',
+
                 question,
+
                 data,
-                answer,
+
+                answer: aiResult.answer,
+
+                aiGenerated:
+                    aiResult.aiGenerated,
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // 5. INCOME THIS MONTH
-        // --------------------------------------------------
+        //
+        // Example:
+        // "How much did I earn this month?"
+        // ==================================================
 
         if (
             normalized.includes('earn') &&
@@ -378,22 +444,28 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
-            const answer = await addAIAnswer(
+            const aiResult = await addAIAnswer(
                 question,
                 data
             );
 
             return res.json({
                 intent: 'income_total',
+
                 question,
+
                 data,
-                answer,
+
+                answer: aiResult.answer,
+
+                aiGenerated:
+                    aiResult.aiGenerated,
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // UNSUPPORTED QUESTION
-        // --------------------------------------------------
+        // ==================================================
 
         return res.status(400).json({
             msg: 'I could not understand that question yet.',
