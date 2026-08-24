@@ -5,6 +5,7 @@ import BalanceSummary from '../components/BalanceSummary';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import ExpenseChart from '../components/ExpenseChart';
+import SpendingInsights from '../components/SpendingInsights';
 
 const API = process.env.REACT_APP_API;
 
@@ -18,7 +19,11 @@ export default function Dashboard() {
     useEffect(() => {
         const fetch = async () => {
             try {
-                const res = await axios.get(`${API}/transactions`, authHeader());
+                const res = await axios.get(
+                    `${API}/transactions`,
+                    authHeader()
+                );
+
                 setTransactions(res.data);
             } catch (err) {
                 setError('Failed to load transactions');
@@ -26,13 +31,22 @@ export default function Dashboard() {
                 setLoading(false);
             }
         };
+
         fetch();
     }, []);
 
     const addTransaction = async (tx) => {
         try {
-            const res = await axios.post(`${API}/transactions`, tx, authHeader());
-            setTransactions(prev => [res.data, ...prev]);
+            const res = await axios.post(
+                `${API}/transactions`,
+                tx,
+                authHeader()
+            );
+
+            setTransactions((prev) => [
+                res.data,
+                ...prev,
+            ]);
         } catch (err) {
             console.error(err);
         }
@@ -40,8 +54,14 @@ export default function Dashboard() {
 
     const deleteTransaction = async (id) => {
         try {
-            await axios.delete(`${API}/transactions/${id}`, authHeader());
-            setTransactions(prev => prev.filter(t => t._id !== id));
+            await axios.delete(
+                `${API}/transactions/${id}`,
+                authHeader()
+            );
+
+            setTransactions((prev) =>
+                prev.filter((t) => t._id !== id)
+            );
         } catch (err) {
             console.error(err);
         }
@@ -49,44 +69,90 @@ export default function Dashboard() {
 
     const exportCSV = () => {
         const rows = [
-            ['Title', 'Amount', 'Type', 'Category', 'Date'],
-            ...transactions.map(t => [
-                t.title, t.amount, t.type, t.category,
-                new Date(t.date).toLocaleDateString()
-            ])
+            [
+                'Title',
+                'Amount',
+                'Type',
+                'Category',
+                'Date',
+            ],
+            ...transactions.map((t) => [
+                t.title,
+                t.amount,
+                t.type,
+                t.category,
+                new Date(t.date).toLocaleDateString(),
+            ]),
         ];
-        const csv = rows.map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
+
+        const csv = rows
+            .map((r) => r.join(','))
+            .join('\n');
+
+        const blob = new Blob([csv], {
+            type: 'text/csv',
+        });
+
         const url = URL.createObjectURL(blob);
+
         const a = document.createElement('a');
-        a.href = url; a.download = 'transactions.csv'; a.click();
+        a.href = url;
+        a.download = 'transactions.csv';
+        a.click();
+
         URL.revokeObjectURL(url);
     };
 
-    const filtered = filter === 'all'
-        ? transactions
-        : transactions.filter(t => t.type === filter);
+    const filtered =
+        filter === 'all'
+            ? transactions
+            : transactions.filter(
+                (t) => t.type === filter
+            );
 
-    if (loading) return (
-        <div className="dashboard-page">
-            <p className="empty">Loading your data...</p>
-        </div>
-    );
+    if (loading) {
+        return (
+            <div className="dashboard-page">
+                <p className="empty">
+                    Loading your data...
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="dashboard-page">
 
-            {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>}
+            {error && (
+                <div
+                    className="error-msg"
+                    style={{
+                        marginBottom: '1rem',
+                    }}
+                >
+                    {error}
+                </div>
+            )}
 
             {/* ── Balance cards ── */}
-            <BalanceSummary transactions={transactions} />
+            <BalanceSummary
+                transactions={transactions}
+            />
 
             {/* ── Chart — full width ── */}
-            <ExpenseChart transactions={transactions} />
+            <ExpenseChart
+                transactions={transactions}
+            />
+
+            {/* ── AI Spending Insights ── */}
+            <SpendingInsights />
 
             {/* ── Export ── */}
             <div className="dash-actions">
-                <button className="btn-export" onClick={exportCSV}>
+                <button
+                    className="btn-export"
+                    onClick={exportCSV}
+                >
                     ⬇ Export CSV
                 </button>
             </div>
@@ -95,27 +161,43 @@ export default function Dashboard() {
             <div className="dash-body">
 
                 {/* Left — add form */}
-                <TransactionForm onAdd={addTransaction} />
+                <TransactionForm
+                    onAdd={addTransaction}
+                />
 
                 {/* Right — transaction list fills remaining space */}
                 <div className="list-section">
+
                     <div className="filter-bar">
-                        {['all', 'income', 'expense'].map(f => (
+                        {[
+                            'all',
+                            'income',
+                            'expense',
+                        ].map((f) => (
                             <button
                                 key={f}
-                                className={`filter-btn ${filter === f ? 'active' : ''}`}
-                                onClick={() => setFilter(f)}
+                                className={`filter-btn ${filter === f
+                                        ? 'active'
+                                        : ''
+                                    }`}
+                                onClick={() =>
+                                    setFilter(f)
+                                }
                             >
-                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                                {f
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    f.slice(1)}
                             </button>
                         ))}
                     </div>
+
                     <TransactionList
                         transactions={filtered}
                         onDelete={deleteTransaction}
                     />
-                </div>
 
+                </div>
             </div>
         </div>
     );
