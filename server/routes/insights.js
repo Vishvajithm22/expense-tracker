@@ -1,6 +1,8 @@
 const router = require('express').Router();
+const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
+
 const {
     generateInsightAnswer,
 } = require('../services/groq');
@@ -10,7 +12,7 @@ function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Get the start and end dates for a month
+// Get start/end dates for a month
 function getMonthRange(offset = 0) {
     const now = new Date();
 
@@ -39,8 +41,8 @@ function getCategory(question) {
     return match ? match[1].trim() : null;
 }
 
-// Ask Groq to phrase the already-calculated result.
-// If Groq fails, return a fallback state instead of breaking the API.
+// Ask Groq to phrase already-calculated data.
+// Groq does NOT calculate financial numbers.
 async function addAIAnswer(question, data) {
     try {
         const answer = await generateInsightAnswer(
@@ -76,14 +78,133 @@ router.post('/ask', auth, async (req, res) => {
     }
 
     try {
-        const normalized = question.toLowerCase().trim();
+        /*
+         * IMPORTANT:
+         *
+         * req.user is a string from the JWT.
+         *
+         * Transaction.aggregate() does not automatically
+         * cast that string to MongoDB ObjectId.
+         *
+         * Therefore we explicitly convert it here.
+         */
+        const userId = new mongoose.Types.ObjectId(
+            req.user
+        );
+
+        const normalized = question
+            .toLowerCase()
+            .trim();
 
         // ==================================================
-        // 1. SPENDING LAST MONTH
+        // 1. COMPARE THIS MONTH VS LAST MONTH
         //
-        // Examples:
-        // "How much did I spend last month?"
-        // "How much did I spend on food last month?"
+        // This MUST come before the "last month" condition.
+        // ==================================================
+
+        if (
+            normalized.includes('compare') &&
+            normalized.includes('spending')
+        ) {
+            const thisMonth = getMonthRange(0);
+            const lastMonth = getMonthRange(-1);
+
+            const result = await Transaction.aggregate([
+                {
+                    $match: {
+                        user: userId,
+                        type: 'expense',
+                        date: {
+                            $gte: lastMonth.start,
+                            $lt: thisMonth.end,
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: {
+                            $cond: [
+                                {
+                                    $gte: [
+                                        '$date',
+                                        thisMonth.start,
+                                    ],
+                                },
+                                'thisMonth',
+                                'lastMonth',
+                            ],
+                        },
+                        total: {
+                            $sum: '$amount',
+                        },
+                    },
+                },
+            ]);
+
+            const totals = {
+                thisMonth: 0,
+                lastMonth: 0,
+            };
+
+            result.forEach((item) => {
+                totals[item._id] = item.total;
+            });
+
+            // Backend performs the calculation.
+            const difference =
+                totals.thisMonth -
+                totals.lastMonth;
+
+            const percentageChange =
+                totals.lastMonth === 0
+                    ? null
+                    : Number(
+                        (
+                            (difference /
+                                totals.lastMonth) *
+                            100
+                        ).toFixed(2)
+                    );
+
+            const data = {
+                thisMonth: totals.thisMonth,
+                lastMonth: totals.lastMonth,
+                difference,
+                percentageChange,
+            };
+
+            // No spending in either month.
+            if (
+                totals.thisMonth === 0 &&
+                totals.lastMonth === 0
+            ) {
+                return res.json({
+                    intent: 'period_comparison',
+                    question,
+                    data,
+                    answer:
+                        'You had no recorded spending this month or last month.',
+                    aiGenerated: false,
+                });
+            }
+
+            const aiResult = await addAIAnswer(
+                question,
+                data
+            );
+
+            return res.json({
+                intent: 'period_comparison',
+                question,
+                data,
+                answer: aiResult.answer,
+                aiGenerated:
+                    aiResult.aiGenerated,
+            });
+        }
+
+        // ==================================================
+        // 2. SPENDING LAST MONTH
         // ==================================================
 
         if (
@@ -94,7 +215,7 @@ router.post('/ask', auth, async (req, res) => {
             const { start, end } = getMonthRange(-1);
 
             const match = {
-                user: req.user,
+                user: userId,
                 type: 'expense',
                 date: {
                     $gte: start,
@@ -136,6 +257,24 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
+            // No data.
+            if (
+                data.total === 0 &&
+                data.transactionCount === 0
+            ) {
+                return res.json({
+                    intent: category
+                        ? 'category_total'
+                        : 'period_total',
+                    question,
+                    data,
+                    answer: category
+                        ? `You haven't recorded any spending on ${category} last month.`
+                        : "You haven't recorded any spending last month.",
+                    aiGenerated: false,
+                });
+            }
+
             const aiResult = await addAIAnswer(
                 question,
                 data
@@ -145,24 +284,16 @@ router.post('/ask', auth, async (req, res) => {
                 intent: category
                     ? 'category_total'
                     : 'period_total',
-
                 question,
-
                 data,
-
                 answer: aiResult.answer,
-
                 aiGenerated:
                     aiResult.aiGenerated,
             });
         }
 
         // ==================================================
-        // 2. SPENDING THIS MONTH
-        //
-        // Examples:
-        // "How much did I spend this month?"
-        // "How much did I spend on food this month?"
+        // 3. SPENDING THIS MONTH
         // ==================================================
 
         if (
@@ -173,7 +304,7 @@ router.post('/ask', auth, async (req, res) => {
             const { start, end } = getMonthRange(0);
 
             const match = {
-                user: req.user,
+                user: userId,
                 type: 'expense',
                 date: {
                     $gte: start,
@@ -215,6 +346,24 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
+            // No data.
+            if (
+                data.total === 0 &&
+                data.transactionCount === 0
+            ) {
+                return res.json({
+                    intent: category
+                        ? 'category_total'
+                        : 'period_total',
+                    question,
+                    data,
+                    answer: category
+                        ? `You haven't recorded any spending on ${category} this month.`
+                        : "You haven't recorded any spending this month.",
+                    aiGenerated: false,
+                });
+            }
+
             const aiResult = await addAIAnswer(
                 question,
                 data
@@ -224,110 +373,9 @@ router.post('/ask', auth, async (req, res) => {
                 intent: category
                     ? 'category_total'
                     : 'period_total',
-
                 question,
-
                 data,
-
                 answer: aiResult.answer,
-
-                aiGenerated:
-                    aiResult.aiGenerated,
-            });
-        }
-
-        // ==================================================
-        // 3. COMPARE THIS MONTH VS LAST MONTH
-        //
-        // Example:
-        // "Compare my spending this month vs last month."
-        // ==================================================
-
-        if (
-            normalized.includes('compare') &&
-            normalized.includes('spending')
-        ) {
-            const thisMonth = getMonthRange(0);
-            const lastMonth = getMonthRange(-1);
-
-            const result = await Transaction.aggregate([
-                {
-                    $match: {
-                        user: req.user,
-                        type: 'expense',
-                        date: {
-                            $gte: lastMonth.start,
-                            $lt: thisMonth.end,
-                        },
-                    },
-                },
-                {
-                    $group: {
-                        _id: {
-                            $cond: [
-                                {
-                                    $gte: [
-                                        '$date',
-                                        thisMonth.start,
-                                    ],
-                                },
-                                'thisMonth',
-                                'lastMonth',
-                            ],
-                        },
-                        total: {
-                            $sum: '$amount',
-                        },
-                    },
-                },
-            ]);
-
-            const totals = {
-                thisMonth: 0,
-                lastMonth: 0,
-            };
-
-            result.forEach((item) => {
-                totals[item._id] = item.total;
-            });
-
-            // The backend performs the calculation.
-            const difference =
-                totals.thisMonth -
-                totals.lastMonth;
-
-            const percentageChange =
-                totals.lastMonth === 0
-                    ? null
-                    : Number(
-                        (
-                            (difference /
-                                totals.lastMonth) *
-                            100
-                        ).toFixed(2)
-                    );
-
-            const data = {
-                thisMonth: totals.thisMonth,
-                lastMonth: totals.lastMonth,
-                difference,
-                percentageChange,
-            };
-
-            const aiResult = await addAIAnswer(
-                question,
-                data
-            );
-
-            return res.json({
-                intent: 'period_comparison',
-
-                question,
-
-                data,
-
-                answer: aiResult.answer,
-
                 aiGenerated:
                     aiResult.aiGenerated,
             });
@@ -335,9 +383,6 @@ router.post('/ask', auth, async (req, res) => {
 
         // ==================================================
         // 4. TOP SPENDING CATEGORY
-        //
-        // Example:
-        // "What category did I spend the most on?"
         // ==================================================
 
         if (
@@ -349,7 +394,7 @@ router.post('/ask', auth, async (req, res) => {
             const result = await Transaction.aggregate([
                 {
                     $match: {
-                        user: req.user,
+                        user: userId,
                         type: 'expense',
                         date: {
                             $gte: start,
@@ -381,6 +426,21 @@ router.post('/ask', auth, async (req, res) => {
                 period: 'this month',
             };
 
+            // No expenses.
+            if (
+                !data.category &&
+                data.total === 0
+            ) {
+                return res.json({
+                    intent: 'top_category',
+                    question,
+                    data,
+                    answer:
+                        "You don't have any recorded spending this month.",
+                    aiGenerated: false,
+                });
+            }
+
             const aiResult = await addAIAnswer(
                 question,
                 data
@@ -388,13 +448,9 @@ router.post('/ask', auth, async (req, res) => {
 
             return res.json({
                 intent: 'top_category',
-
                 question,
-
                 data,
-
                 answer: aiResult.answer,
-
                 aiGenerated:
                     aiResult.aiGenerated,
             });
@@ -402,9 +458,6 @@ router.post('/ask', auth, async (req, res) => {
 
         // ==================================================
         // 5. INCOME THIS MONTH
-        //
-        // Example:
-        // "How much did I earn this month?"
         // ==================================================
 
         if (
@@ -416,7 +469,7 @@ router.post('/ask', auth, async (req, res) => {
             const result = await Transaction.aggregate([
                 {
                     $match: {
-                        user: req.user,
+                        user: userId,
                         type: 'income',
                         date: {
                             $gte: start,
@@ -444,6 +497,21 @@ router.post('/ask', auth, async (req, res) => {
                     result[0]?.transactionCount || 0,
             };
 
+            // No income.
+            if (
+                data.total === 0 &&
+                data.transactionCount === 0
+            ) {
+                return res.json({
+                    intent: 'income_total',
+                    question,
+                    data,
+                    answer:
+                        "You haven't recorded any income this month.",
+                    aiGenerated: false,
+                });
+            }
+
             const aiResult = await addAIAnswer(
                 question,
                 data
@@ -451,13 +519,9 @@ router.post('/ask', auth, async (req, res) => {
 
             return res.json({
                 intent: 'income_total',
-
                 question,
-
                 data,
-
                 answer: aiResult.answer,
-
                 aiGenerated:
                     aiResult.aiGenerated,
             });
@@ -479,7 +543,10 @@ router.post('/ask', auth, async (req, res) => {
             ],
         });
     } catch (err) {
-        console.error('Insights error:', err);
+        console.error(
+            'Insights error:',
+            err
+        );
 
         return res.status(500).json({
             msg: 'Server error',
